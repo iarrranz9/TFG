@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SART en VR</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+</head>
+<body>
+    <a-scene>
+        <a-sky color="#ECECEC"></a-sky>
+        <a-entity camera position="0 2 0" look-controls wasd-controls cursor="rayOrigin: mouse"></a-entity>
+
+        
+
+        <a-text value="¡NO presiones espacio si aparece un 3!" position="-1.75 3.85 -3" color="#0a0a0a"></a-text>
+
+        <a-text id="number" value="3" position="-0.2 1 -2" width="6" height="8" color="#0a0a0a" visible="false">
+            <a-animation attributeefinite></a-animation>
+        </a-text>
+
+        <a-text id="summary" value="" position="-1 0.5 -3" visible="false"></a-text>
+        <a-text id="timer" value="Tiempo restante: 10s" position="-1 2 -3" color="#0a0a0a"></a-text>
+        <a-text id="countdown" value="3" position="0 3.5 -3" color="#0a0a0a"></a-text>
+
+        <a-box id="restartButton" position="-1 1 -3" color="green" scale="1 0.5 0.5" visible="false" class="clickable"></a-box>
+        <a-text value="RESTART" position="-1 1.5 -3" align="center" color="black" width="5" visible="false"></a-text>
+        <a-box id="endgameButton" position="1 1 -3" color="red" scale="1 0.5 0.5" visible="false" class="clickable"></a-box>
+        <a-text value="ENDGAME" position="1 1.5 -3" align="center" color="black" width="5" visible="false"></a-text>
+    </a-scene>
+
+    <script>
+        const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+        let currentIndex = 0;
+        const numberElement = document.getElementById('number');
+        const summaryElement = document.getElementById('summary');
+        const timerElement = document.getElementById('timer');
+        const countdownElement = document.getElementById('countdown');
+        const restartButton = document.getElementById('restartButton');
+        const endgameButton = document.getElementById('endgameButton');
+
+        let correctResponses = 0;
+        let incorrectResponses = 0;
+        let testActive = false;
+        let timeRemaining = 10;
+        let spacePressed = false;
+
+        function changeNumber() {
+            if (!testActive) return;
+
+            numberElement.setAttribute('visible', false);
+
+            setTimeout(() => {
+                if (!spacePressed) { 
+                    if (numbers[currentIndex] === "3") {
+                        correctResponses++; // No presionar en "3" es correcto
+                    } else {
+                        incorrectResponses++; // No presionar en otro número es incorrecto
+                    }
+                }
+
+                // Resetear estado
+                spacePressed = false;
+
+                currentIndex = Math.floor(Math.random() * numbers.length);
+                numberElement.setAttribute('value', numbers[currentIndex]);
+                numberElement.setAttribute('visible', true);
+            }, 500);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (!testActive) return;
+            if (event.code === 'Space' && !spacePressed) {
+                spacePressed = true;
+
+                if (numbers[currentIndex] === "3") {
+                    incorrectResponses++; // Presionar en "3" es incorrecto
+                } else {
+                    correctResponses++; // Presionar en otro número es correcto
+                }
+            }
+        });
+
+        function startTest() {
+            testActive = true;
+            currentIndex = Math.floor(Math.random() * numbers.length);
+            numberElement.setAttribute('value', numbers[currentIndex]);
+            numberElement.setAttribute('visible', true);
+
+            const intervalId = setInterval(changeNumber, 2000);
+
+            const timerId = setInterval(() => {
+                if (!testActive) return;
+                timeRemaining--;
+                timerElement.setAttribute('value', `Tiempo restante: ${timeRemaining}s`);
+                if (timeRemaining <= 0) {
+                    clearInterval(timerId);
+                }
+            }, 1000);
+
+            setTimeout(() => {
+                clearInterval(intervalId);
+                clearInterval(timerId);
+                testActive = false;
+                numberElement.setAttribute('visible', false);
+                summaryElement.setAttribute('value', `Aciertos: ${correctResponses}\nFallos: ${incorrectResponses}`);
+                summaryElement.setAttribute('color', 'black');
+                summaryElement.setAttribute('position', "-0.5 3 -2.5");
+                summaryElement.setAttribute('visible', true);
+                restartButton.setAttribute('visible', true);
+                endgameButton.setAttribute('visible', true);
+                document.querySelector('a-text[value="RESTART"]').setAttribute('visible', true);
+                document.querySelector('a-text[value="ENDGAME"]').setAttribute('visible', true);
+            }, 10000);
+        }
+
+        let countdown = 3;
+        const countdownInterval = setInterval(() => {
+            countdownElement.setAttribute('value', countdown);
+            countdown--;
+            if (countdown < 0) {
+                clearInterval(countdownInterval);
+                countdownElement.setAttribute('visible', false);
+                startTest();
+            }
+        }, 1000);
+
+        restartButton.addEventListener('click', () => location.reload());
+        endgameButton.addEventListener('click', () => window.close());
+    </script>
+</body>
+</html>
